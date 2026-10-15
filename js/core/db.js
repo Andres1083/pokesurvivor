@@ -81,8 +81,9 @@ G.DB = (() => {
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+      pvit: {},               // dex -> { id -> nivel }: vitaminas de cada Pokémon
       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
-      pity: {},               // generación del banner -> tiradas sin ★5
+      pity: {},               // (legado) ya no se usa pity de 5★
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
       arenas: {},             // tipo -> fecha: arenas de grieta ganadas
       itemsFound: {},         // id -> fecha: objetos equipables encontrados
@@ -164,6 +165,14 @@ G.DB = (() => {
       for (const id of Object.keys(u)) {
         if (!G.Upgrades.BY[id]) delete u[id];
         else u[id] = Math.min(G.Upgrades.BY[id].max, n(u[id]));
+      }
+    }
+    if (G.Vitamins) for (const d of Object.keys(s.pvit || {})) {
+      const u = s.pvit[d];
+      if (!u || typeof u !== 'object') { delete s.pvit[d]; continue; }
+      for (const id of Object.keys(u)) {
+        if (!G.Vitamins.BY[id]) delete u[id];
+        else u[id] = Math.min(G.Vitamins.BY[id].max, n(u[id]));
       }
     }
   }
@@ -258,6 +267,11 @@ G.DB = (() => {
       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
+    r.pvit = r.pvit || {};
+    for (const d in older.pvit || {}) {
+      const mine = r.pvit[d] = r.pvit[d] || {};
+      for (const k in older.pvit[d]) mine[k] = Math.max(mine[k] || 0, older.pvit[d][k]);
+    }
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
       r[coll] = r[coll] || {};
@@ -836,6 +850,13 @@ G.DB = (() => {
     return save.pupg[dex] || (save.pupg[dex] = {});
   }
 
+  /** Vitaminas compradas para un Pokémon: { id -> nivel }. */
+  function vitaminsOf(dex) {
+    if (!save) return {};
+    save.pvit = save.pvit || {};
+    return save.pvit[dex] || (save.pvit[dex] = {});
+  }
+
   /** Da la versión shiny (y la normal, si no la tenía). Devuelve true si es nueva. */
   function grantShiny(dex, from) {
     grant(dex, from);
@@ -846,7 +867,7 @@ G.DB = (() => {
 
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
-    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
+    owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, vitaminsOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */
