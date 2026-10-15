@@ -1,12 +1,12 @@
 /* ============ gacha.js — un banner por generación ============
  * Lógica pura: no toca la interfaz. La pantalla está en ui/gacha-ui.js.
  *
- * 9 banners (Kanto ... Paldea). Cada uno con su propio pity.
+ * 9 banners (Kanto ... Paldea).
  * Probabilidades por tirada:  1★ 45% · 2★ 30% · 3★ 17% · 4★ 6.5% · 5★ 1.5%
  * Garantías:
  *   - la tirada ×10 trae al menos un 4★ o superior
- *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
- * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
+ *   - (sin pity de 5★: las tiradas son puras)
+ * Shiny: 1 de cada 150 tiradas sale en su versión shiny.
  * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
  *
  * Se tira con TICKETS (se consiguen jugando):
@@ -22,8 +22,7 @@ G.Gacha = (() => {
     return t.t1 >= n ? { t1: n, t10: 0 } : null;
   }
   const RATES = [[1, 45], [2, 30], [3, 17], [4, 6.5], [5, 1.5]];
-  const PITY_5 = 70;
-  const SHINY_RATE = 1 / 100;
+  const SHINY_RATE = 1 / 150;
   const REFUND = { 1: 15, 2: 30, 3: 60, 4: 120, 5: 300 };
   let forceShiny = 0;           // para pruebas y vídeos: las N próximas salen shiny
 
@@ -82,20 +81,15 @@ G.Gacha = (() => {
     if (!cost) return null;
     save.tickets.t1 -= cost.t1;
     save.tickets.t10 -= cost.t10;
-    save.pity = save.pity || {};
     save.shiny = save.shiny || {};
-    save.pity[gen] = save.pity[gen] || 0;
 
     const out = [];
     for (let i = 0; i < n; i++) {
-      save.pity[gen]++;
       let want;
-      if (save.pity[gen] >= PITY_5) want = 5;
-      else if (n === 10 && i === n - 1 && !out.some(r => r.rarity >= 4)) want = rollRarity(4);
+      if (n === 10 && i === n - 1 && !out.some(r => r.rarity >= 4)) want = rollRarity(4);
       else want = rollRarity();
 
       const { rarity, list } = poolNear(want, gen);
-      if (rarity === 5) save.pity[gen] = 0;
       let mon = G.U.pick(list);
       let shiny = G.Sprites.hasShiny(mon.dex) && (forceShiny > 0 ? (forceShiny--, true) : Math.random() < SHINY_RATE);
       // Los shiny no se repiten: si ya tienes ese, sale otro de la misma rareza
@@ -125,6 +119,6 @@ G.Gacha = (() => {
   }
 
   return { debugForceShiny(n = 1) { forceShiny = n; },
-           costOf, RATES, PITY_5, SHINY_RATE, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS,
+           costOf, RATES, SHINY_RATE, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS,
            pool, featured, pull };
 })();

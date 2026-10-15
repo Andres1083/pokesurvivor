@@ -3,8 +3,8 @@
  * se materializan en pantalla. Cada ~45 s hay una "marea": una avalancha
  * concentrada desde un lado concreto, para romper el ritmo.
  *
- * Cada enemigo tiene 1/4096 de salir shiny (como en los juegos clásicos).
- * Una run mata 1.500–4.000, así que sale uno cada 1–3 partidas.
+ * Cada enemigo tiene 1/8192 de salir shiny (más raro que el clásico).
+ * Una run mata 1.500–4.000, así que sale uno cada 3–6 partidas aproximadamente.
  *
  * Cooperativo (sólo en el anfitrión): aparecen alrededor de un jugador vivo
  * al azar, fuera de la vista de TODOS, y hay más y más fuertes según cuántos
@@ -21,7 +21,7 @@ G.Spawner = (() => {
   // La resistencia extra crece con la run: al principio ×3,3 y hasta ×5
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
-  const SHINY_RATE = 1 / 4096;
+  const SHINY_RATE = 1 / 8192;
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
