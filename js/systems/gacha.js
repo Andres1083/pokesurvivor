@@ -3,9 +3,7 @@
  *
  * 9 banners (Kanto ... Paldea).
  * Probabilidades por tirada:  1★ 45% · 2★ 30% · 3★ 17% · 4★ 6.5% · 5★ 1.5%
- * Garantías:
- *   - la tirada ×10 trae al menos un 4★ o superior
- *   - (sin pity de 5★: las tiradas son puras)
+ * Sin garantías ni pity: todas las tiradas son puras según las probabilidades.
  * Shiny: 1 de cada 150 tiradas sale en su versión shiny.
  * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
  *
@@ -85,10 +83,7 @@ G.Gacha = (() => {
 
     const out = [];
     for (let i = 0; i < n; i++) {
-      let want;
-      if (n === 10 && i === n - 1 && !out.some(r => r.rarity >= 4)) want = rollRarity(4);
-      else want = rollRarity();
-
+      const want = rollRarity();
       const { rarity, list } = poolNear(want, gen);
       let mon = G.U.pick(list);
       let shiny = G.Sprites.hasShiny(mon.dex) && (forceShiny > 0 ? (forceShiny--, true) : Math.random() < SHINY_RATE);
