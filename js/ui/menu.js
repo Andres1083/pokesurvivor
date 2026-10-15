@@ -5,15 +5,17 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
+    if (G.Gamepad && G.Gamepad.init) G.Gamepad.init();
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
+      // Steam Deck / mando: las mejoras se abren desde la ficha del Pokémon, no desde el menú.
+      if (b.dataset.go === 'upgrades') { b.classList.add('hidden'); b.style.display = 'none'; return; }
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
       b.onclick = () => {
         const go = b.dataset.go;
         if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
         else if (go === 'dex') openDex();
-        else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
         else if (go === 'goals') G.GoalsUI.open();
         else if (go === 'friends') G.FriendsUI.open();
@@ -206,9 +208,12 @@ G.MenuUI = (() => {
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
-        ${usingThis
-          ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
-          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          ${usingThis
+            ? '<button class="btn grow" disabled style="flex:1">Es tu compañero</button>'
+            : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="flex:1">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+          <button id="dex-upgrade" class="btn" data-sfx="click" style="flex:1">Mejorar</button>
+        </div>
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
@@ -226,24 +231,30 @@ G.MenuUI = (() => {
       G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
       renderGrid(); showDetail(dex);
     };
+    const upgBtn = $('dex-upgrade');
+    if (upgBtn) upgBtn.onclick = () => openUpgrades(dex);
   }
 
   // ---------------- mejoras ----------------
 
   let upgDex = null;
 
-  function openUpgrades() {
+  /** Abre mejoras del Pokémon indicado (desde su ficha). Sin lista de 900. */
+  function openUpgrades(dex) {
     G.UI.show('scr-upgrades', true);
     const s = G.DB.save;
-    if (!upgDex || !s.owned[upgDex]) upgDex = s.partner;
-    // Selector con tus Pokémon: el compañero primero, luego los que ya tienen mejoras.
+    upgDex = (dex && s.owned[dex]) ? +dex : (s.partner || upgDex);
+    // Ocultar el selector: se entra siempre desde la ficha del Pokémon (Steam Deck / mando).
     const sel = $('upg-mon');
-    const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
-    const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
-      .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
-    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
-    sel.value = upgDex;
-    sel.onchange = () => { upgDex = +sel.value; G.Audio.sfx('select'); renderUpgrades(); };
+    if (sel) {
+      sel.classList.add('hidden');
+      sel.style.display = 'none';
+    }
+    const lab = document.querySelector('label[for="upg-mon"]');
+    if (lab) lab.style.display = 'none';
+    // Volver regresa a la colección, no al menú principal.
+    const back = document.querySelector('#scr-upgrades [data-back]');
+    if (back) back.onclick = () => openDex();
     renderUpgrades();
   }
 
