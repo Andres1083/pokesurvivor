@@ -290,6 +290,27 @@ G.MenuUI = (() => {
       box.appendChild(el);
       if (u.id === 'ban' && lvl > 0 && banOpen) box.appendChild(banPicker(lvl));
     }
+
+    // ---------- Vitaminas (desplegable como Veto) ----------
+    if (G.Vitamins) {
+      const vitLevels = G.DB.vitaminsOf(upgDex);
+      const totalVit = Object.values(vitLevels).reduce((a, b) => a + b, 0);
+      const vitEl = document.createElement('div');
+      vitEl.className = 'panel upg-item';
+      vitEl.innerHTML = `
+        <div class="ic">${G.Icons.html('sprout', 32)}</div>
+        <div>
+          <b>Vitaminas</b> <span style="color:var(--muted);font-size:13px">mejora permanente suave</span>
+          <div class="pips">${totalVit ? `<span style="font-size:12px;color:var(--gold)">${totalVit} aplicadas</span>` : ''}</div>
+        </div>
+        <div class="upg-btns">
+          <button class="btn small" data-vit>${vitOpen ? 'Cerrar' : 'Abrir'}</button>
+        </div>`;
+      vitEl.querySelector('[data-vit]').onclick = () => { vitOpen = !vitOpen; renderUpgrades(); };
+      box.appendChild(vitEl);
+      if (vitOpen) box.appendChild(vitaminsPanel());
+    }
+
     box.appendChild(bindPanel());
   }
 
@@ -323,6 +344,50 @@ G.MenuUI = (() => {
         renderUpgrades();
       };
     });
+    return el;
+  }
+
+  // ---------------- vitaminas ----------------
+  let vitOpen = false;
+  function vitaminsPanel() {
+    const s = G.DB.save;
+    const levels = G.DB.vitaminsOf(upgDex);
+    const mon = G.DEX_BY[upgDex];
+    const el = document.createElement('div');
+    el.className = 'panel ban-picker';
+    el.innerHTML = `<p class="sub" style="margin:0 0 8px">Vitaminas permanentes para <b>${mon.name}</b>. Precio inicial 10.000, se duplica cada nivel.</p>`;
+    for (const v of G.Vitamins.LIST) {
+      const lvl = levels[v.id] || 0;
+      const maxed = lvl >= v.max;
+      const cost = maxed ? 0 : G.Vitamins.cost(v.id, lvl);
+      const row = document.createElement('div');
+      row.className = 'panel upg-item';
+      row.style.margin = '6px 0';
+      row.innerHTML = `
+        <div class="ic">${G.Icons.html(v.icon, 28)}</div>
+        <div>
+          <b>${v.name}</b> <span style="color:var(--muted);font-size:13px">${v.unit}</span>
+          <div class="pips">${Array.from({ length: v.max }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('')}</div>
+        </div>
+        <div class="upg-btns">
+          <button class="btn small ${maxed ? '' : 'gold'}" data-buy-vit data-id="${v.id}" data-sfx="none" ${maxed || s.coins < cost ? 'disabled' : ''}>
+          ${maxed ? 'Máx.' : `<span class="coin"></span> ${cost.toLocaleString('es')}`}</button>
+        </div>`;
+      row.querySelector('[data-buy-vit]').onclick = () => {
+        const sv = G.DB.save, lv = G.DB.vitaminsOf(upgDex), now = lv[v.id] || 0;
+        if (now >= v.max) { renderUpgrades(); return; }
+        const price = G.Vitamins.cost(v.id, now);
+        if (sv.coins < price) { renderUpgrades(); return; }
+        sv.coins -= price;
+        lv[v.id] = now + 1;
+        G.DB.commit(true);
+        G.Audio.sfx('buy');
+        G.UI.refreshCoins();
+        G.UI.toast(`${mon.name} · ${v.name}: nivel ${now + 1}`);
+        renderUpgrades();
+      };
+      el.appendChild(row);
+    }
     return el;
   }
 
