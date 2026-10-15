@@ -1,0 +1,411 @@
+diff --git a/css/style.css b/css/style.css
+index 684b694..2813ef0 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -842,3 +842,10 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
+   #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
+     box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
+ }
++
++/* ---- mando (Steam Deck, Xbox, PlayStation...): ver js/core/gamepad.js ---- */
++.padfocus { outline: 4px solid var(--gold) !important; outline-offset: 3px;
++  box-shadow: 0 0 0 2px rgba(0,0,0,.6), 0 0 22px rgba(255,210,63,.75) !important; }
++.pad-hint { display: none; }
++body.padmode .pad-hint { display: block; }
++body.padmode .kbd-hint, body.padmode .touch-hint { display: none !important; }
+diff --git a/dev.html b/dev.html
+index 27dd2bd..3414ce7 100644
+--- a/dev.html
++++ b/dev.html
+@@ -541,6 +541,7 @@
+     <h2>Pausa</h2>
+     <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+     <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
++    <p class="sub pad-hint">Stick izquierdo: moverte · A B X Y: movimiento · LB/RB: ciclar · Start: pausa</p>
+     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
+     <div id="pause-sound" class="sound-inline"></div>
+     <div class="row" style="justify-content:center">
+@@ -574,6 +575,7 @@
+ <script defer src="js/core/audio.js"></script>
+ <script defer src="js/core/input.js"></script>
+ <script defer src="js/core/touch.js"></script>
++<script defer src="js/core/gamepad.js"></script>
+ <script defer src="js/core/sprites.js"></script>
+ <script defer src="js/core/camera.js"></script>
+ <!-- datos de juego -->
+diff --git a/js/core/gamepad.js b/js/core/gamepad.js
+new file mode 100644
+index 0000000..e38c429
+--- /dev/null
++++ b/js/core/gamepad.js
+@@ -0,0 +1,278 @@
++/* ============ gamepad.js — mando (Steam Deck, Xbox, PlayStation...) ============
++ * Usa la API Gamepad del navegador; no hace falta ninguna plantilla de Steam
++ * con "teclado y ratón". Se consulta una vez por fotograma desde game.js.
++ *
++ * En la partida:
++ *   stick izq. / cruceta  moverse           A B X Y   movimiento 1 2 3 4
++ *   LB / LT, RB / RT      ciclar (Q / E)    Start     pausa
++ * En menús y cartas (cualquier pantalla abierta):
++ *   cruceta / stick izq.  moverse entre botones (también ajusta barras)
++ *   A aceptar · B volver · Y cambiar opciones (nivel) · LB / RB cambiar de pestaña
++ *
++ * Todo lo que hace en la partida lo hace "inyectando" las mismas teclas que ya
++ * entiende el juego (G.Input.inject), así no hay que tocar la lógica de game.js.
++ */
++G.Pad = (() => {
++  const DEAD = 0.25;
++  const B = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, SELECT: 8, START: 9,
++              UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
++  const N = 17;
++
++  let prev = new Array(N).fill(false), cur = new Array(N).fill(false);
++  let ax = [0, 0];
++  let connected = false, preferred = false;
++  let focusEl = null, pendingTab = false;
++  const rep = { dir: null, t: 0, n: 0 };
++
++  const pressed = i => cur[i] && !prev[i];
++
++  // ---------------- lectura ----------------
++
++  function read() {
++    const list = navigator.getGamepads ? navigator.getGamepads() : [];
++    const now = new Array(N).fill(false);
++    let x = 0, y = 0, any = false;
++    for (const p of list) {
++      if (!p || !p.connected) continue;
++      any = true;
++      p.buttons.forEach((b, i) => { if (i < N && (b.pressed || b.value > 0.6)) now[i] = true; });
++      const px = p.axes[0] || 0, py = p.axes[1] || 0;
++      if (Math.hypot(px, py) > Math.hypot(x, y)) { x = px; y = py; }
++    }
++    connected = any;
++    prev = cur; cur = now;
++    const m = Math.hypot(x, y);
++    if (m < DEAD) { x = 0; y = 0; }
++    else { const k = Math.min(1, (m - DEAD) / (1 - DEAD)) / m; x *= k; y *= k; }
++    ax = [x, y];
++  }
++
++  /** Vector de movimiento (stick + cruceta), o null si no se toca nada. */
++  function axis() {
++    let x = ax[0], y = ax[1];
++    if (cur[B.LEFT]) x -= 1;
++    if (cur[B.RIGHT]) x += 1;
++    if (cur[B.UP]) y -= 1;
++    if (cur[B.DOWN]) y += 1;
++    if (!x && !y) return null;
++    const m = Math.hypot(x, y);
++    return m > 1 ? [x / m, y / m] : [x, y];
++  }
++
++  function setPreferred(v) {
++    if (preferred === v) return;
++    preferred = v;
++    document.body.classList.toggle('padmode', v);
++    if (!v) setFocus(null);
++  }
++
++  // ---------------- partida ----------------
++
++  function gameplay() {
++    const st = G.Game && G.Game.state;
++    if (G.Judgment && G.Judgment.cinematic) {
++      if (pressed(B.A) || pressed(B.B) || pressed(B.START)) G.Input.inject('enter');
++      return;
++    }
++    if (st !== 'playing' && st !== 'paused') return;
++    if (pressed(B.START)) G.Input.inject('escape');
++    if (st !== 'playing') return;
++    [B.A, B.B, B.X, B.Y].forEach((b, i) => { if (pressed(b)) G.Input.inject('digit' + (i + 1)); });
++    if (pressed(B.LB) || pressed(B.LT)) G.Input.inject('keyq');
++    if (pressed(B.RB) || pressed(B.RT)) G.Input.inject('keye');
++  }
++
++  // ---------------- menús ----------------
++
++  const CAND = 'button, a[href], input:not([type=hidden]), select, textarea, .card, .menu-item, .tab, .chip, ' +
++               '.cell:not(.locked), .answer, .gen-tab, [tabindex]:not([tabindex="-1"])';
++  const TEXT_INPUT = 'input:not([type]), input[type=text], input[type=password], input[type=email], input[type=search], textarea';
++
++  const $ = id => document.getElementById(id);
++  const shown = e => !e.closest('.hidden');
++
++  /** La capa más alta que está abierta (por z-index; si empatan, la última del documento). */
++  function topLayer() {
++    let best = null, bz = -1;
++    const all = [...document.querySelectorAll('.scr:not(.hidden), #pull-fx:not(.hidden), #tap-start:not(.hidden)')];
++    for (const el of all) {
++      const z = parseInt(getComputedStyle(el).zIndex, 10) || 0;
++      if (z >= bz) { best = el; bz = z; }
++    }
++    return best;
++  }
++
++  function candidates(top) {
++    let els = [...top.querySelectorAll(CAND)];
++    const tb = $('topbar');
++    if (top.id === 'scr-menu' && tb && !tb.classList.contains('hidden')) els = els.concat([...tb.querySelectorAll('button')]);
++    return els.filter(e => !e.disabled && shown(e) && e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height > 0);
++  }
++
++  function setFocus(el) {
++    if (focusEl) focusEl.classList.remove('padfocus');
++    focusEl = el;
++    if (!el) return;
++    el.classList.add('padfocus');
++    try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* nada */ }
++  }
++
++  function initial(top) {
++    const c = candidates(top);
++    return c.find(e => e.matches('.menu-item, .card')) || c.find(e => e.matches('.btn.gold')) || c[0] || null;
++  }
++
++  function center(e) { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
++
++  /**
++   * Siguiente elemento en una dirección: primero la fila (o columna) más cercana
++   * y, dentro de ella, el que está más alineado. Así no se salta filas aunque
++   * otro botón más lejano quede justo debajo.
++   */
++  function spatial(top, dir) {
++    const c0 = center(focusEl);
++    const found = [];
++    for (const o of candidates(top)) {
++      if (o === focusEl || o.contains(focusEl) || focusEl.contains(o)) continue;
++      const c = center(o), dx = c.x - c0.x, dy = c.y - c0.y;
++      const [p, s] = dir === 'right' ? [dx, dy] : dir === 'left' ? [-dx, dy] : dir === 'down' ? [dy, dx] : [-dy, dx];
++      if (p > 4) found.push({ o, p, s: Math.abs(s) });
++    }
++    if (!found.length) return null;
++    const minP = Math.min(...found.map(f => f.p));
++    return found.filter(f => f.p <= minP + 28).sort((a, b) => a.s - b.s)[0].o;
++  }
++
++  function scrollSome(top, dy) {
++    const box = [top, ...top.querySelectorAll('*')].find(e => {
++      const o = getComputedStyle(e).overflowY;
++      return (o === 'auto' || o === 'scroll') && e.scrollHeight > e.clientHeight + 4;
++    });
++    if (box) box.scrollBy({ top: dy, behavior: 'auto' });
++  }
++
++  /** Dirección pulsada (cruceta o stick), con repetición al mantener. */
++  function direction() {
++    let d = null;
++    if (cur[B.UP] || ax[1] < -0.55) d = 'up';
++    else if (cur[B.DOWN] || ax[1] > 0.55) d = 'down';
++    else if (cur[B.LEFT] || ax[0] < -0.55) d = 'left';
++    else if (cur[B.RIGHT] || ax[0] > 0.55) d = 'right';
++    const now = performance.now();
++    if (!d) { rep.dir = null; return null; }
++    if (d !== rep.dir) { rep.dir = d; rep.t = now + 380; return d; }
++    if (now >= rep.t) { rep.t = now + 120; return d; }
++    return null;
++  }
++
++  function stepRange(el, sign) {
++    const step = Number(el.step) || 1, span = (Number(el.max) || 100) - (Number(el.min) || 0);
++    const v = Math.max(Number(el.min) || 0, Math.min(Number(el.max) || 100, Number(el.value) + sign * Math.max(step, span / 20)));
++    el.value = v;
++    el.dispatchEvent(new Event('input', { bubbles: true }));
++    el.dispatchEvent(new Event('change', { bubbles: true }));
++  }
++
++  function stepSelect(el, sign) {
++    const n = el.options.length;
++    if (!n) return;
++    el.selectedIndex = (el.selectedIndex + sign + n) % n;
++    el.dispatchEvent(new Event('input', { bubbles: true }));
++    el.dispatchEvent(new Event('change', { bubbles: true }));
++  }
++
++  function activate(el) {
++    if (el.matches(TEXT_INPUT)) { el.focus(); return; }
++    if (el.matches('input[type=range]')) return;
++    if (el.tagName === 'SELECT') { stepSelect(el, 1); return; }
++    el.click();
++  }
++
++  const BACK_TEXT = /^(volver|cerrar|atr[aá]s|cancelar|back|close|cancel)$/i;
++  function goBack(top) {
++    const btns = candidates(top).filter(e => e.matches('button, a'));
++    const b = btns.find(e => e.matches('[data-back]')) ||
++              btns.find(e => BACK_TEXT.test((e.textContent || '').trim()) || /(close|back)$/i.test(e.id || ''));
++    if (b) { b.click(); return; }
++    if (G.Game && G.Game.state === 'paused') G.Input.inject('escape');
++  }
++
++  function switchTab(top, sign) {
++    const tabs = candidates(top).filter(e => e.matches('.gen-tab'));
++    if (tabs.length < 2) return;
++    const i = tabs.findIndex(t => t.classList.contains('on'));
++    if (i < 0) return;
++    tabs[(i + sign + tabs.length) % tabs.length].click();
++    pendingTab = true;
++  }
++
++  function navigate(top, wasPad) {
++    // Con un campo de texto activo: A, B o Start lo sueltan; arriba/abajo lo sueltan y siguen
++    // navegando (el login lo deja activo al abrirse); izquierda/derecha mueven el cursor de escritura.
++    const ae = document.activeElement;
++    if (ae && ae.matches && ae.matches(TEXT_INPUT)) {
++      if (pressed(B.A) || pressed(B.B) || pressed(B.START)) { ae.blur(); return; }
++      if (pressed(B.UP) || pressed(B.DOWN) || ax[1] < -0.55 || ax[1] > 0.55) ae.blur();
++      else return;
++    }
++    // "Pulsa para empezar" y la animación del gacha: cualquier botón vale.
++    if (top.id === 'tap-start') { if (cur.some((v, i) => v && !prev[i])) top.click(); return; }
++    if (top.id === 'pull-fx') {
++      if (pressed(B.A) || pressed(B.B)) {
++        const c = $('pull-close');
++        (c && shown(c) ? c : $('slot')).click();
++      }
++      return;
++    }
++
++    if (pendingTab) {
++      pendingTab = false;
++      const t = top.querySelector('.gen-tab.on');
++      if (t) setFocus(t);
++    }
++    if (focusEl && (!focusEl.isConnected || !top.contains(focusEl) && !($('topbar') || document.body).contains(focusEl) || !shown(focusEl))) setFocus(null);
++
++    // Si ya se jugaba con el mando y la pantalla cambió (otra pantalla, otra pregunta), el cursor reaparece solo.
++    if (!focusEl && wasPad) setFocus(initial(top));
++
++    const dir = direction();
++    const act = pressed(B.A), back = pressed(B.B);
++    if (back) { goBack(top); return; }
++    if (pressed(B.START) && G.Game && G.Game.state === 'paused') { G.Input.inject('escape'); return; }
++    if (pressed(B.Y)) { const r = $('lvl-reroll'); if (r && shown(r) && top.contains(r)) { r.click(); return; } }
++    if (pressed(B.LB)) { switchTab(top, -1); return; }
++    if (pressed(B.RB)) { switchTab(top, 1); return; }
++    if (!dir && !act) return;
++
++    // Primera pulsación: sólo enseña dónde está el cursor.
++    if (!focusEl) { setFocus(initial(top)); return; }
++
++    if (act) { activate(focusEl); return; }
++
++    if ((dir === 'left' || dir === 'right') && focusEl.matches('input[type=range]')) { stepRange(focusEl, dir === 'right' ? 1 : -1); return; }
++    if ((dir === 'left' || dir === 'right') && focusEl.tagName === 'SELECT') { stepSelect(focusEl, dir === 'right' ? 1 : -1); return; }
++    const next = spatial(top, dir);
++    if (next) setFocus(next);
++    else if (dir === 'up' || dir === 'down') scrollSome(top, dir === 'down' ? 160 : -160);
++  }
++
++  // ---------------- bucle ----------------
++
++  /** Una vez por fotograma, justo antes de leer las teclas. */
++  function update() {
++    read();
++    const anyPress = cur.some((v, i) => v && !prev[i]);
++    const wasPad = preferred;
++    if (anyPress || ax[0] || ax[1]) setPreferred(true);
++    if (anyPress && G.Audio) G.Audio.unlock();
++    if (!connected) return;
++    const top = topLayer();
++    if (top) navigate(top, wasPad); else { if (focusEl) setFocus(null); gameplay(); }
++  }
++
++  // Ratón, táctil o teclado: vuelve a la vista normal (sin cursor del mando).
++  addEventListener('pointerdown', () => setPreferred(false), true);
++  addEventListener('keydown', () => setPreferred(false), true);
++
++  return { update, axis, setPreferred, get connected() { return connected; }, get preferred() { return preferred; } };
++})();
+diff --git a/js/core/input.js b/js/core/input.js
+index 53f7102..37dfe88 100644
+--- a/js/core/input.js
++++ b/js/core/input.js
+@@ -1,4 +1,4 @@
+-/* ============ input.js — teclado y ratón (el táctil está en touch.js) ============ */
++/* ============ input.js — teclado y ratón (el táctil está en touch.js, el mando en gamepad.js) ============ */
+ G.Input = (() => {
+   const down = new Set();
+   const pressed = new Set();   // se limpia cada frame
+@@ -29,6 +29,8 @@ G.Input = (() => {
+     axis() {
+       const t = G.Touch && G.Touch.vector();
+       if (t && (t[0] || t[1])) return t;
++      const g = G.Pad && G.Pad.axis();
++      if (g) return g;
+       let x = 0, y = 0;
+       if (MOVE_KEYS.left.some(k => down.has(k))) x -= 1;
+       if (MOVE_KEYS.right.some(k => down.has(k))) x += 1;
+@@ -39,6 +41,8 @@ G.Input = (() => {
+     held(c) { return down.has(c); },
+     /** true sólo en el frame en que se pulsó. */
+     tap(c) { return pressed.has(c); },
++    /** Pulsación "virtual" (la usa el mando): cuenta como si se hubiera tecleado. */
++    inject(c) { pressed.add(c); },
+     mouse() { return { x: mx, y: my, down: mdown }; },
+     endFrame() { pressed.clear(); }
+   };
+diff --git a/js/data/changelog.js b/js/data/changelog.js
+index 7b8ac56..1847eb8 100644
+--- a/js/data/changelog.js
++++ b/js/data/changelog.js
+@@ -6,6 +6,10 @@
+  * Cada línea en español y en inglés.
+  */
+ G.CHANGELOG = [
++  { d: '2026-10-15', title: ['Soporte de mando', 'Gamepad support'], new: [
++    ['Mando (Steam Deck, Xbox, PlayStation...): stick o cruceta para moverte, A B X Y para elegir el movimiento, LB/RB (o LT/RT) para ciclar y Start para pausar. En los menús, la cruceta mueve un marco dorado entre los botones, A acepta, B vuelve, Y cambia las opciones de nivel y LB/RB cambian de pestaña. Las barras de volumen se ajustan con izquierda/derecha.',
++     'Gamepad (Steam Deck, Xbox, PlayStation...): stick or d-pad to move, A B X Y to pick the move, LB/RB (or LT/RT) to cycle and Start to pause. In menus, the d-pad moves a golden frame between buttons, A confirms, B goes back, Y rerolls level-up options and LB/RB switch tabs. Volume sliders are adjusted with left/right.']
++  ] },
+   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
+     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
+      'If you play with a name and password, you can link your Gmail: if you ever forget your password, sign in with Google and it is the same account. We offer it when you sign in.'],
+diff --git a/js/data/lang-en.js b/js/data/lang-en.js
+index 830b7c7..594d543 100644
+--- a/js/data/lang-en.js
++++ b/js/data/lang-en.js
+@@ -199,7 +199,9 @@ G.I18n.add({
+   'Grieta · {x} m · {x} s': 'Rift · {x} m · {x} s', 'DERROTADOS ·': 'DEFEATED ·', 'MONEDAS': 'COINS',
+   '{x} · {x} DERROTADOS · {x} MONEDAS': '{x} · {x} DEFEATED · {x} COINS',
+   'Arrastra el dedo para moverte · toca un ataque para cambiarlo': 'Drag your finger to move · tap a move to switch',
++  'Stick izquierdo: moverte · A B X Y: movimiento · LB/RB: ciclar · Start: pausa': 'Left stick: move · A B X Y: move slot · LB/RB: cycle · Start: pause',
+   'WASD moverse · 1-4 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD move · 1-4 / Q / E or click a move to switch · Esc pause',
++  'Stick moverse · A B X Y / LB RB para cambiar de ataque · Start pausa': 'Stick to move · A B X Y / LB RB to switch move · Start pause',
+   'El anfitrión ha terminado la partida': 'The host has ended the game', 'Se ha perdido la conexión con el anfitrión.': 'Lost connection to the host.',
+ 
+   // ---------------- pausa y fin ----------------
+diff --git a/js/game.js b/js/game.js
+index bae5a36..087fe80 100644
+--- a/js/game.js
++++ b/js/game.js
+@@ -595,6 +595,7 @@ G.Game = (() => {
+     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
+     frameDt = state === 'playing' ? dt : 0;
+ 
++    G.Pad.update();
+     handleKeys();
+ 
+     if (state === 'playing') update(dt);
+diff --git a/js/ui/hud.js b/js/ui/hud.js
+index ef328ba..1159280 100644
+--- a/js/ui/hud.js
++++ b/js/ui/hud.js
+@@ -322,7 +322,7 @@ G.HUD = (() => {
+       ctx.font = F(800, 9);
+       ctx.fillStyle = fused ? BOND : on ? col : 'rgba(180,200,230,.6)';
+       ctx.textAlign = 'left';
+-      ctx.fillText(String(i + 1), x + 3, y + 10);
++      ctx.fillText(G.Pad && G.Pad.preferred ? 'ABXY'[i] || String(i + 1) : String(i + 1), x + 3, y + 10);
+ 
+       // nombre encima del activo (con un vínculo: "Ascuas +2")
+       if (on) {
+@@ -382,7 +382,8 @@ G.HUD = (() => {
+       ctx.font = F(600, 10);
+       ctx.textAlign = 'center';
+       ctx.fillStyle = 'rgba(180,200,230,.55)';
+-      ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
++      ctx.fillText(G.Pad && G.Pad.preferred ? 'Stick moverse  ·  A B X Y / LB RB para cambiar de ataque  ·  Start pausa'
++                         : touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
+                          : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
+     }
+ 

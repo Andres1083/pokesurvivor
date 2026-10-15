@@ -1,0 +1,41 @@
+PokéSurvivor con soporte de mando (Steam Deck, Xbox, PlayStation)
+=================================================================
+
+CONTROLES
+  En la partida
+    Stick izquierdo o cruceta ..... moverte
+    A / B / X / Y ................. elegir movimiento 1 / 2 / 3 / 4
+    LB o LT / RB o RT ............. movimiento anterior / siguiente
+    Start ......................... pausa
+  En menús, cartas de nivel y pausa
+    Cruceta o stick ............... mover el marco dorado entre botones
+    A ............................. aceptar        B ... volver / cerrar
+    Y ............................. cambiar opciones (al subir de nivel)
+    LB / RB ....................... cambiar de pestaña
+    Izquierda / derecha ........... ajustar las barras de volumen
+  Si tocas el teclado, el ratón o la pantalla, el juego vuelve a la vista normal.
+
+CÓMO INSTALARLO (modo escritorio de la Steam Deck)
+  1. Abre Brave y entra en  github.com/JPTER78/pokesurvivor
+     Pulsa  Code > Download ZIP  y extrae la carpeta (por ejemplo en Documentos).
+  2. Extrae ESTE zip encima de esa carpeta y acepta reemplazar los archivos.
+     (Trae: js/core/gamepad.js nuevo, y cambios en index.html, dev.html,
+      js/app.min.js, js/game.js, js/core/input.js, js/ui/hud.js, css/style.css,
+      js/data/changelog.js, js/data/lang-en.js y version.json.)
+  3. En Brave abre el archivo  index.html  de esa carpeta
+     (por ejemplo  file:///home/deck/Documents/pokesurvivor-main/index.html ).
+  4. Para el modo Gaming: añádelo a Steam como juego que no es de Steam.
+     En sus controles elige la plantilla "Gamepad" (mando), NO la de teclado y ratón:
+     el juego ya lee el mando directamente.
+
+AVISOS
+  * La nube solo funciona en la web oficial (pokesurvivor.com). Una copia local guarda
+    la partida SOLO en ese navegador y empieza de cero: no se trae tu progreso de la
+    web oficial, ni hay ranking ni cooperativo.
+  * Probado con un mando simulado en un navegador (Chromium), no con una Steam Deck real.
+  * Los botones del mando no cuentan para el navegador como "interacción" para el sonido:
+    si la música no suena, toca la pantalla o el trackpad una vez.
+  * index.html y app.min.js van SIN minificar ni ofuscar (no pude ejecutar ese paso aquí).
+    Funciona igual; solo pesa algo más.
+  * pokesurvivor-mando.patch es el cambio limpio (solo código fuente), por si quieres
+    proponérselo al autor para que lo incluya en la web oficial.
