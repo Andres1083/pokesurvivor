@@ -89,7 +89,24 @@ G.Game = (() => {
     holdBy = []; awayBy = null;
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    const upg = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    const vit = G.Vitamins ? G.Vitamins.perks(G.DB.vitaminsOf(mon.dex)) : {};
+    // Combinar mejoras + vitaminas (multiplicadores se multiplican, flats se suman)
+    const perks = {
+      hp: (upg.hp || 0) + (vit.hp || 0),
+      atkMul: (upg.atkMul || 1) * (vit.atkMul || 1),
+      spdMul: (upg.spdMul || 1) * (vit.spdMul || 1),
+      cdMul: upg.cdMul || 1,
+      dmgReduce: (upg.dmgReduce || 0) + (vit.dmgReduce || 0),
+      regen: (upg.regen || 0) + (vit.regen || 0),
+      magnetMul: upg.magnetMul || 1,
+      xpMul: upg.xpMul || 1,
+      coinMul: upg.coinMul || 1,
+      startMoves: upg.startMoves || 1,
+      crit: (upg.crit || 0) + (vit.crit || 0),
+      rerolls: upg.rerolls || 0,
+      bans: upg.bans || 0
+    };
 
     G.UI.hideAll();
     G.UI.chrome(false);
