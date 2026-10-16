@@ -11,7 +11,9 @@ G.CHANGELOG = [
      'In the collection, the Pokémon card now adds your upgrades and vitamins to health, attack and speed, and also shows defense, crits, regeneration, cooldown, magnet, experience, coins, card rerolls, ban and starting moves.']
   ], new: [
     ['Altares: ahora los poderes distintos conviven (Furia, Rayo, Imán y Prisa a la vez, cada uno con su contador). Si coges el mismo dos veces, se suma el tiempo.',
-     'Altars: different powers now stack together (Fury, Lightning, Magnet and Haste at once, each with its own timer). Taking the same one twice adds time.']
+     'Altars: different powers now stack together (Fury, Lightning, Magnet and Haste at once, each with its own timer). Taking the same one twice adds time.'],
+    ['Colección: nuevo botón "Orden" para ver tus Pokémon del más fuerte al más débil (media de vida, ataque y velocidad con tus mejoras y vitaminas). La ficha del compañero queda fija a la derecha al desplazar la lista, los números son más grandes y los shiny tienen un marco de otro color.',
+     'Collection: new "Order" button to list your Pokémon from strongest to weakest (average of health, attack and speed with your upgrades and vitamins). The partner card now stays fixed on the right while you scroll the list, the numbers are bigger and shinies get a different-colored frame.']
   ] },
   { d: '2026-10-14', title: ['Recupera tu cuenta con Gmail', 'Recover your account with Gmail'], new: [
     ['Si juegas con nombre y contraseña, puedes vincular tu Gmail: si un día olvidas la contraseña, entras con Google y es tu misma cuenta. Te lo ofrecemos al entrar.',
