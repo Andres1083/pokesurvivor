@@ -220,6 +220,9 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .stat { display: grid; grid-template-columns: 90px 1fr 34px; gap: 8px; align-items: center; font-size: 14px; margin: 5px 0; }
 .stat .bar { height: 8px; background: rgba(0,0,0,.35); border-radius: 6px; overflow: hidden; }
 .stat .bar i { display: block; height: 100%; background: var(--gold); }
+.stats2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 4px 0 8px; }
+.stat2 { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; color: var(--muted); border-bottom: 1px solid rgba(255,255,255,.06); padding: 2px 0; }
+.stat2 b { color: var(--text, #fff); font-weight: 600; white-space: nowrap; }
 .type {
   display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;
   color: #10131a; text-shadow: none; margin-right: 4px;
