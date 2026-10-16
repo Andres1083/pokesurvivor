@@ -38,8 +38,10 @@ G.Vitamins = (() => {
   /** Mejoras + vitaminas de un Pokémon ya combinadas (multiplicadores se multiplican, planos se suman).
    *  Lo usan la partida (game.js) y la ficha de la colección (menu.js), para que ambas coincidan. */
   function merged(dex) {
-    const upg = G.Upgrades.perks(G.DB.upgradesOf(dex));
-    const vit = perks(G.DB.vitaminsOf(dex));
+    // Sólo lee (no crea entradas vacías en la partida guardada al mirar la colección).
+    const sv = G.DB.save || {};
+    const upg = G.Upgrades.perks((sv.pupg && sv.pupg[dex]) || {});
+    const vit = perks((sv.pvit && sv.pvit[dex]) || {});
     return {
       hp: (upg.hp || 0) + (vit.hp || 0),
       atkMul: (upg.atkMul || 1) * (vit.atkMul || 1),
