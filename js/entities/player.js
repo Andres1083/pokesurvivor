@@ -67,7 +67,7 @@ G.Player = class Player {
     this.lavaTick = 0;
     this.attackFace = 0;       // tiempo que sigue mirando al objetivo tras atacar
     this.dead = false;
-    this.power = null;         // poder de altar activo: { def, t, dur }
+    this.powers = [];          // poderes de altar activos (pueden convivir): [{ def, t, dur }]
     this.slowT = 0;            // pegado por una trampa
     this.item = null;          // objeto equipado (data/items.js), uno por run
     this.sashT = -999;         // última vez que salvó la Banda Focus
@@ -296,20 +296,17 @@ G.Player = class Player {
     if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
   }
 
-  /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo (ahora acumulable si es el mismo). */
+  /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo.
+   *  Poderes distintos conviven; si es el mismo que ya llevas, se suma el tiempo (no el efecto). */
   addPower(def, dur) {
-    if (this.power) {
-      // Si es el mismo poder activo, sumamos la duración al tiempo restante
-      if (this.power.def === def || (def.id && this.power.def.id && def.id === this.power.def.id)) {
-        this.power.t += dur;
-        this.power.dur += dur;
-        return;
-      }
-      // Si es diferente, apagamos el poder anterior
-      this.power.def.off(this);
+    const same = this.powers.find(p => p.def === def || (def.id && p.def.id === def.id));
+    if (same) {
+      same.t += dur;
+      same.dur += dur;
+      return;
     }
     def.on(this);
-    this.power = { def, t: dur, dur };
+    this.powers.push({ def, t: dur, dur });
   }
 
   addBuff(stat, amount, dur, maxStacks) {
@@ -334,7 +331,10 @@ G.Player = class Player {
     }
     if (this.slowT > 0) this.slowT -= dt;
     if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
-    if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
+    for (let i = this.powers.length - 1; i >= 0; i--) {
+      const pw = this.powers[i];
+      if ((pw.t -= dt) <= 0) { pw.def.off(this); this.powers.splice(i, 1); }
+    }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
 
     // --- movimiento con colisiones ---
@@ -454,11 +454,15 @@ G.Player = class Player {
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y);
     // Poder de altar: aro de su color latiendo bajo los pies.
-    if (this.power && !this.dead) {
+    if (this.powers.length && !this.dead) {
       ctx.save();
       ctx.globalAlpha = 0.35 + Math.sin(performance.now() / 120) * 0.15;
-      ctx.strokeStyle = this.power.def.color; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 2.1, this.r * 0.85, 0, 0, 6.2832); ctx.stroke();
+      ctx.lineWidth = 3;
+      // Un aro por poder, cada uno un poco más grande para que se vean todos.
+      this.powers.forEach((pw, i) => {
+        ctx.strokeStyle = pw.def.color;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * (2.1 + i * 0.4), this.r * (0.85 + i * 0.16), 0, 0, 6.2832); ctx.stroke();
+      });
       ctx.restore();
     }
 
