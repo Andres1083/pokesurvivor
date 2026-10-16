@@ -184,9 +184,29 @@ G.MenuUI = (() => {
     else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
     showDetail.last = dex;
 
-    const max = { hp: 183, atk: 1.55, spd: 137 };
+    // Con las mejoras y vitaminas ya compradas (mismo cálculo que en partida).
+    const pk = own ? G.Vitamins.merged(dex) : null;
+    const tHp = own ? Math.round(p.hp + pk.hp) : 0;
+    const tAtk = own ? p.atk * pk.atkMul : 0;
+    const tSpd = own ? Math.round(p.spd * pk.spdMul) : 0;
+    // Tope de las barras: el mayor Pokémon con todo al máximo.
+    const max = { hp: 183 + 120, atk: 1.55 * 1.4 * 1.15, spd: 137 * 1.24 * 1.12 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
+    const pct = v => (Math.round(v * 1000) / 10).toString().replace('.', ',') + '%';
+    const row = (label, val) => `<div class="stat2"><span>${label}</span><b>${val}</b></div>`;
+    const extras = own ? [
+      row('Defensa', pct(pk.dmgReduce)),
+      row('Críticos', pct(pk.crit)),
+      row('Regeneración', (Math.round(pk.regen * 10) / 10).toString().replace('.', ',') + ' vida/s'),
+      row('Recarga', pk.cdMul < 1 ? '-' + pct(1 - pk.cdMul) : '0%'),
+      row('Imán', '+' + pct(pk.magnetMul - 1)),
+      row('Experiencia', '+' + pct(pk.xpMul - 1)),
+      row('Pokémonedas', '+' + pct(pk.coinMul - 1)),
+      row('Cambios de carta', pk.rerolls + 1),
+      row('Veto', pk.bans),
+      row('Movs. iniciales', pk.startMoves)
+    ].join('') : '';
     const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
 
     const box = $('dex-detail');
@@ -202,9 +222,12 @@ G.MenuUI = (() => {
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div>
       ${own ? `
-        ${bar('Vida', p.hp, max.hp, p.hp)}
-        ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
-        ${bar('Velocidad', p.spd, max.spd, p.spd)}
+        ${bar('Vida', tHp, max.hp, tHp)}
+        ${bar('Ataque', tAtk, max.atk, '×' + tAtk.toFixed(2))}
+        ${bar('Velocidad', tSpd, max.spd, tSpd)}
+        <p class="sub" style="margin:2px 0 6px;font-size:12px">Base ${p.hp} · ×${p.atk.toFixed(2)} · ${p.spd}${
+          (tHp !== p.hp || tAtk !== p.atk || tSpd !== p.spd) ? ' — más tus mejoras y vitaminas' : ''}</p>
+        <div class="stats2">${extras}</div>
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
