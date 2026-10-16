@@ -3,6 +3,26 @@ G.MenuUI = (() => {
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
   let dexFilter = 'all', dexGen = 1, dexSel = null;
+  // Orden de la lista: 'num' (número de Pokédex) o 'power' (del más fuerte al más débil). Se recuerda.
+  let dexSort = 'num';
+  try { if (localStorage.getItem('ps_dexsort') === 'power') dexSort = 'power'; } catch (e) { /* sin almacenamiento */ }
+
+  // Tope de cada barra: el mayor Pokémon con todo al máximo (mejoras + vitaminas).
+  const STAT_MAX = { hp: 183 + 120, atk: 1.55 * 1.4 * 1.15, spd: 137 * 1.24 * 1.12 };
+  /** Vida, ataque y velocidad de un Pokémon; si lo tienes, con tus mejoras y vitaminas (como en partida). */
+  function monStats(p, own) {
+    const pk = own ? G.Vitamins.merged(p.dex) : null;
+    return {
+      pk,
+      hp: Math.round(p.hp + (pk ? pk.hp : 0)),
+      atk: p.atk * (pk ? pk.atkMul : 1),
+      spd: Math.round(p.spd * (pk ? pk.spdMul : 1))
+    };
+  }
+  /** Fuerza 0-100: media de vida, ataque y velocidad frente al tope de cada una. */
+  function powerOf(st) {
+    return Math.round((st.hp / STAT_MAX.hp + st.atk / STAT_MAX.atk + st.spd / STAT_MAX.spd) / 3 * 100);
+  }
 
   function init() {
     if (G.Gamepad && G.Gamepad.init) G.Gamepad.init();
@@ -128,6 +148,16 @@ G.MenuUI = (() => {
                ['5', 5], ['4', 4], ['3', 3], ['2', 2], ['1', 1]];
     const fb = $('dex-filters');
     fb.innerHTML = '';
+    const sortChip = document.createElement('button');
+    sortChip.className = 'chip' + (dexSort === 'power' ? ' on' : '');
+    sortChip.title = 'Ordenar la lista';
+    sortChip.textContent = dexSort === 'power' ? 'Orden: fuerza ↓' : 'Orden: Nº';
+    sortChip.onclick = () => {
+      dexSort = dexSort === 'power' ? 'num' : 'power';
+      try { localStorage.setItem('ps_dexsort', dexSort); } catch (e) { /* sin almacenamiento */ }
+      openDex();
+    };
+    fb.appendChild(sortChip);
     for (const [k, label] of F) {
       const c = document.createElement('button');
       c.className = 'chip' + (k === dexFilter ? ' on' : '');
@@ -144,6 +174,7 @@ G.MenuUI = (() => {
     const s = G.DB.save;
     const grid = $('dex-grid');
     grid.innerHTML = '';
+    const rows = [];
     for (const p of G.DEX) {
       if (p.gen !== dexGen) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
@@ -151,9 +182,14 @@ G.MenuUI = (() => {
       if (dexFilter === 'miss' && own) continue;
       if (dexFilter === 'shiny' && !sh) continue;
       if (/^\d$/.test(dexFilter) && p.rarity !== +dexFilter) continue;
-
+      rows.push({ p, own, sh, pw: own ? powerOf(monStats(p, true)) : -1 });
+    }
+    // Por fuerza: los que tienes primero, del más fuerte al más débil (los que no, al final y por número).
+    if (dexSort === 'power') rows.sort((a, b) => b.pw - a.pw || a.p.dex - b.p.dex);
+    for (const { p, own, sh, pw } of rows) {
       const cell = document.createElement('div');
-      cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
+      cell.className = 'cell' + (own ? '' : ' locked') + (sh ? ' has-shiny' : '') + (p.dex === dexSel ? ' on' : '');
+      if (dexSort === 'power' && own) cell.insertAdjacentHTML('beforeend', `<span class="pw" title="Fuerza">${pw}</span>`);
       cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
       if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
@@ -185,17 +221,18 @@ G.MenuUI = (() => {
     showDetail.last = dex;
 
     // Con las mejoras y vitaminas ya compradas (mismo cálculo que en partida).
-    const pk = own ? G.Vitamins.merged(dex) : null;
-    const tHp = own ? Math.round(p.hp + pk.hp) : 0;
-    const tAtk = own ? p.atk * pk.atkMul : 0;
-    const tSpd = own ? Math.round(p.spd * pk.spdMul) : 0;
-    // Tope de las barras: el mayor Pokémon con todo al máximo.
-    const max = { hp: 183 + 120, atk: 1.55 * 1.4 * 1.15, spd: 137 * 1.24 * 1.12 };
+    const st = own ? monStats(p, true) : null;
+    const pk = st && st.pk;
+    const tHp = own ? st.hp : 0;
+    const tAtk = own ? st.atk : 0;
+    const tSpd = own ? st.spd : 0;
+    const max = STAT_MAX;
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
     const pct = v => (Math.round(v * 1000) / 10).toString().replace('.', ',') + '%';
-    const row = (label, val) => `<div class="stat2"><span>${label}</span><b>${val}</b></div>`;
+    const row = (label, val, cls = '') => `<div class="stat2 ${cls}"><span>${label}</span><b>${val}</b></div>`;
     const extras = own ? [
+      row('Fuerza', powerOf(st) + ' / 100', 'full'),
       row('Defensa', pct(pk.dmgReduce)),
       row('Críticos', pct(pk.crit)),
       row('Regeneración', (Math.round(pk.regen * 10) / 10).toString().replace('.', ',') + ' vida/s'),
@@ -210,6 +247,7 @@ G.MenuUI = (() => {
     const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
 
     const box = $('dex-detail');
+    box.classList.toggle('shiny', own && viewShiny);
     box.innerHTML = `
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
       ${hasSh ? `<div class="seg">
@@ -231,7 +269,7 @@ G.MenuUI = (() => {
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <div class="dex-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
           ${usingThis
             ? '<button class="btn grow" disabled style="flex:1">Es tu compañero</button>'
             : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="flex:1">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
