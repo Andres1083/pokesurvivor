@@ -225,6 +225,21 @@ G.RunUI = (() => {
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
+    const p = G.Game.player;
+    const stats = $('pause-stats');
+    if (p) {
+      const fmt = n => Math.max(0, Math.floor(n || 0)).toLocaleString('es');
+      stats.innerHTML =
+        '<h3>Estadísticas de esta run</h3>' +
+        `<div><span>Tiempo</span><b>${G.U.mmss(G.Game.st.time)}</b></div>` +
+        `<div><span>Nivel</span><b>${fmt(p.level)}</b></div>` +
+        `<div><span>Experiencia</span><b>${fmt(p.xp)} / ${fmt(p.xpNext)}</b></div>` +
+        `<div><span>Pokémon derrotados</span><b>${fmt(p.kills)}</b></div>` +
+        `<div><span>Jefes derrotados</span><b>${fmt(p.bosses)}</b></div>` +
+        `<div><span>Monedas recogidas</span><b>${fmt(p.coins)}</b></div>`;
+    } else {
+      stats.innerHTML = '';
+    }
     G.UI.show('scr-pause');
   }
 

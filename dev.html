@@ -102,9 +102,9 @@
     <p id="signup-closed" class="note center hidden"></p>
     <form id="login-form" autocomplete="off">
       <label for="f-user">Nombre</label>
-      <input id="f-user" class="field" maxlength="16" spellcheck="false">
+      <input id="f-user" class="field" type="text" maxlength="16" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="username" inputmode="text" enterkeyhint="next">
       <label for="f-pass">Contraseña</label>
-      <input id="f-pass" class="field" type="password" maxlength="64">
+      <input id="f-pass" class="field" type="password" maxlength="64" autocomplete="current-password" enterkeyhint="go">
       <p id="login-err" class="err"></p>
       <p class="note"><a href="#" id="f-forgot">¿Olvidaste tu contraseña?</a></p>
       <p id="forgot-note" class="note hidden">Si vinculaste tu Gmail, pulsa <b>Entrar con Google</b> con ese Gmail: es tu misma cuenta.
@@ -543,6 +543,7 @@
     <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
     <p class="sub pad-hint">Stick izquierdo: moverte · A B X Y: movimiento · LB/RB: ciclar · Start: pausa</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
+    <div id="pause-stats" class="pause-stats" aria-live="polite"></div>
     <div id="pause-sound" class="sound-inline"></div>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>

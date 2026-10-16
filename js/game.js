@@ -301,13 +301,16 @@ G.Game = (() => {
     };
     const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
     const record = time > save.stats.bestTime;
+    const bestLevelRecord = pl.level > (save.stats.bestLevel || 0);
 
     save.coins += coins;
     bankTickets(false);
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
+    if (record) save.stats.bestTimeDex = pl.dex;
     save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));
     if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
+    if (bestLevelRecord) save.stats.bestLevelDex = pl.dex;
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
     const judge = G.Judgment.summary();
