@@ -133,8 +133,8 @@ G.HUD = (() => {
     }
 
     // Poder de altar activo.
-    if (pl.power) {
-      const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
+    for (const pw of pl.powers) {
+      const txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
       ctx.font = F(800, 9);
       ctx.textAlign = 'left';
       const tw = ctx.measureText(txt).width + 12;
