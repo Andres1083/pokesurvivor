@@ -204,16 +204,16 @@ G.Player = class Player {
       this.hp = Math.max(1, this.hp - Math.max(1, this.maxHp * 0.01));
     }
     const anim = { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
-                   aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
-                   mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot' }[m.kind] || 'Attack';
-    // Las familias nuevas suenan como la parecida de las de siempre.
-    const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile' };
-    // El rastro no suena a cada charco (sería un zumbido constante).
-    if (m.kind !== 'trail') G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
-    if (m.kind === 'trail') return;
-    // No reinicies una animación que va por la mitad: se vería a tirones.
-    if (this.anim.busy() && this.anim.progress() < 0.65) return;
-    const meta = G.Sprites.animMeta(this.dex, anim);
+      aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
+      mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot' }[m.kind] || 'Attack';
+      // Las familias nuevas suenan como la parecida de las de siempre.
+      const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile' };
+      // El rastro no suena a cada charco (sería un zumbido constante).
+      if (m.kind !== 'trail') G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
+      if (m.kind === 'trail') return;
+      // No reinicies una animación que va por la mitad: se vería a tirones.
+      if (this.anim.busy() && this.anim.progress() < 0.65) return;
+      const meta = G.Sprites.animMeta(this.dex, anim);
     const len = meta ? meta.d.reduce((a, b) => a + b, 0) / 60 : 0.4;
     const cd = Math.max(0.12, m.cd * this.cdMul);
     this.anim.play(anim, { speed: Math.max(1, len / (cd * 0.9)) });
@@ -296,9 +296,18 @@ G.Player = class Player {
     if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
   }
 
-  /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
+  /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo (ahora acumulable si es el mismo). */
   addPower(def, dur) {
-    if (this.power) this.power.def.off(this);
+    if (this.power) {
+      // Si es el mismo poder activo, sumamos la duración al tiempo restante
+      if (this.power.def === def || (def.id && this.power.def.id && def.id === this.power.def.id)) {
+        this.power.t += dur;
+        this.power.dur += dur;
+        return;
+      }
+      // Si es diferente, apagamos el poder anterior
+      this.power.def.off(this);
+    }
     def.on(this);
     this.power = { def, t: dur, dur };
   }
@@ -371,8 +380,8 @@ G.Player = class Player {
     const threat = G.Projectiles.nearest(all, this.x, this.y, this.r + 24);
     const boss = all.find(e => e.boss && !e.dead && G.U.dist(this.x, this.y, e.x, e.y) < 330);
     const tg = (ranged ? boss || threat : threat || boss)
-            || G.Projectiles.nearest(all, this.x, this.y, 520)
-            || G.World.nearestBreakable(this.x, this.y, 200);
+    || G.Projectiles.nearest(all, this.x, this.y, 520)
+    || G.World.nearestBreakable(this.x, this.y, 200);
     this.target = tg;
     if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
     else if (this.walking) this.aim = this.moveAngle;
