@@ -795,12 +795,6 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .login-official { margin: -6px 0 12px; font-size: 12px; color: var(--muted); text-align: center; opacity: .85; }
 .login-links { margin-top: 10px; font-size: 13px; text-align: center; }
 .login-links a { color: #9fd4ff; }
-.record-mon { display: inline-block; width: 30px; height: 30px; vertical-align: middle; margin: -7px 2px -7px 3px; image-rendering: pixelated; }
-.pause-stats { margin: 10px auto 12px; padding: 9px 12px; width: min(320px, 100%); text-align: left; border: 1px solid rgba(244,248,255,.2); border-radius: 8px; background: rgba(0,0,0,.18); }
-.pause-stats h3 { margin: 0 0 5px; color: var(--gold); font-size: 15px; }
-.pause-stats div { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; font-size: 13px; }
-.pause-stats span { color: var(--muted); }
-.pause-stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
 
 /* ---------- apoyar el proyecto ---------- */
 #scr-support { z-index: 60; }
@@ -862,9 +856,9 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   /* Imagen a la izquierda y nombre/tipos a la derecha: así caben más estadísticas. */
   #dex-detail > * { flex: 1 1 100%; min-width: 0; order: 3; }
   #dex-detail > .stage { flex: 0 0 84px; width: 84px; height: 74px; margin: 0; order: 0; }
-  #dex-detail > .center { flex: 1 1 0; order: 0; align-self: center; }
+  #dex-detail > div.center { flex: 1 1 0; order: 0; align-self: center; }
   #dex-detail > .seg { order: 1; }
-  #dex-detail > .center h3 { font-size: 15px; }
+  #dex-detail > div.center h3 { font-size: 15px; }
   #scr-dex .cell .no { font-size: 13px; }
   .stats2 { gap: 0 8px; margin: 2px 0 4px; }
   .stat2 { font-size: 11px; padding: 1px 0; }
@@ -884,11 +878,29 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
     max-height: calc(100vh - 80px); }
   #dex-detail > * { flex: 1 1 100%; min-width: 0; order: 3; }
   #dex-detail > .stage { flex: 0 0 112px; width: 112px; height: 98px; margin: 0; order: 0; }
-  #dex-detail > .center { flex: 1 1 0; order: 0; align-self: center; }
+  #dex-detail > div.center { flex: 1 1 0; order: 0; align-self: center; }
   #dex-detail > .seg { order: 1; margin: 6px 0 2px; }
-  #dex-detail > .center h3 { font-size: 18px; margin: 0; }
+  #dex-detail > div.center h3 { font-size: 18px; margin: 0; }
   #dex-detail .stat { margin: 3px 0; }
   #dex-detail p { margin: 6px 0 4px !important; }
   #dex-detail .dex-actions { position: sticky; bottom: -10px; margin-top: 6px !important; padding: 8px 0 4px;
     background: linear-gradient(180deg, rgba(10,22,52,0), rgba(10,22,52,.97) 26%); }
+}
+
+/* ---- menú principal: Pokémon de cada récord, a la derecha de las estadísticas ---- */
+#menu-stats { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#menu-stats .stats-text { min-width: 0; }
+.stats-recs { display: flex; gap: 8px; flex: 0 0 auto; }
+.rec-mon { text-align: center; line-height: 1; }
+.rec-mon canvas { display: block; width: 52px; height: 45px; margin: 0 auto; }
+
+/* ---- pausa: estadísticas a la izquierda, sonido y botones a la derecha ---- */
+#pause-stats { text-align: left; margin: 8px 0; }
+#pause-stats h3 { font-size: 16px; }
+@media (min-width: 701px) {
+  #scr-pause .box { width: min(780px, 100%) !important; display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; align-items: start; }
+  #scr-pause .box > h2, #scr-pause .box > p, #scr-pause .box > .note { grid-column: 1 / -1; }
+  #scr-pause #pause-stats { grid-column: 1; grid-row: span 2; margin-top: 0; }
+  #scr-pause .box > #pause-sound { grid-column: 2; }
+  #scr-pause .box > .row { grid-column: 2; align-self: end; }
 }

@@ -221,25 +221,65 @@ G.RunUI = (() => {
     renderBond();
   }
 
+  /** Estadísticas de la pausa: la run (tiempo, nivel, derrotados...) y tu Pokémon ahora mismo
+   *  (con mejoras, vitaminas, poderes de altar y objeto). El panel se crea solo si falta en el HTML. */
+  function renderPauseStats(p) {
+    let box = $('pause-stats');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'pause-stats';
+      $('pause-sound').parentNode.insertBefore(box, $('pause-sound'));
+    }
+    box.className = 'panel';
+    if (!p) { box.innerHTML = ''; box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const fmt = n => Math.max(0, Math.floor(n || 0)).toLocaleString('es');
+    const pct = v => (Math.round(v * 1000) / 10).toString().replace('.', ',') + '%';
+    const row = (label, val, cls = '') => `<div class="stat2 ${cls}"><span>${label}</span><b>${val}</b></div>`;
+    const it = p.item && G.Items && G.Items.BY[p.item];
+    const powers = (p.powers || []).map(w => `${w.def.name} ${Math.ceil(w.t)} s`).join(' · ');
+    box.innerHTML =
+      `<h3 style="margin:0 0 4px">${p.mon.name} · Nv ${fmt(p.level)}</h3>` +
+      '<div class="stats2">' +
+        row('Tiempo', G.U.mmss(G.Game.st.time)) +
+        row('Experiencia', `${fmt(p.xp)} / ${fmt(p.xpNext)}`) +
+        row('Derrotados', fmt(p.kills)) +
+        row('Jefes', fmt(p.bosses)) +
+        row('Monedas', fmt(p.coins)) +
+      '</div>' +
+      '<h3 style="margin:8px 0 4px;font-size:14px">Tu Pokémon ahora</h3>' +
+      '<div class="stats2">' +
+        row('Vida', `${Math.ceil(p.hp)} / ${Math.round(p.maxHp)}`) +
+        row('Ataque', '×' + p.atk.toFixed(2)) +
+        row('Velocidad', Math.round(p.spd)) +
+        row('Defensa', pct(p.reduction)) +
+        row('Críticos', pct(p.critChance || 0)) +
+        row('Regeneración', (Math.round(p.regen * 10) / 10).toString().replace('.', ',') + ' vida/s') +
+        row('Recarga', p.cdMul < 1 ? '-' + pct(1 - p.cdMul) : '0%') +
+        row('Imán', '+' + pct(p.magnet / 78 - 1)) +
+        row('Bonus exp.', '+' + pct(p.xpMul - 1)) +
+        row('Bonus monedas', '+' + pct(p.coinMul - 1)) +
+      '</div>' +
+      '<h3 style="margin:8px 0 4px;font-size:14px">Objeto y poderes</h3>' +
+      '<div class="stats2">' +
+        row('Objeto', it ? it.name : 'Ninguno', 'full') +
+        (it && it.desc ? `<div class="stat2 full"><span style="font-size:12px">${it.desc}</span></div>` : '') +
+        row('Poderes de altar', powers || 'Ninguno', 'full') +
+      '</div>';
+  }
+
+  let pauseT = 0;
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
-    const p = G.Game.player;
-    const stats = $('pause-stats');
-    if (p) {
-      const fmt = n => Math.max(0, Math.floor(n || 0)).toLocaleString('es');
-      stats.innerHTML =
-        '<h3>Estadísticas de esta run</h3>' +
-        `<div><span>Tiempo</span><b>${G.U.mmss(G.Game.st.time)}</b></div>` +
-        `<div><span>Nivel</span><b>${fmt(p.level)}</b></div>` +
-        `<div><span>Experiencia</span><b>${fmt(p.xp)} / ${fmt(p.xpNext)}</b></div>` +
-        `<div><span>Pokémon derrotados</span><b>${fmt(p.kills)}</b></div>` +
-        `<div><span>Jefes derrotados</span><b>${fmt(p.bosses)}</b></div>` +
-        `<div><span>Monedas recogidas</span><b>${fmt(p.coins)}</b></div>`;
-    } else {
-      stats.innerHTML = '';
-    }
+    renderPauseStats(G.Game.player);
+    // En grupo la partida sigue mientras estás en la pausa: se va actualizando.
+    clearInterval(pauseT);
+    pauseT = setInterval(() => {
+      if (!G.UI.isOpen('scr-pause')) { clearInterval(pauseT); return; }
+      renderPauseStats(G.Game.player);
+    }, 500);
     G.UI.show('scr-pause');
   }
 

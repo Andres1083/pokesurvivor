@@ -7,18 +7,6 @@ G.LoginUI = (() => {
     document.querySelectorAll('#scr-login .tab').forEach(t => {
       t.onclick = () => setMode(t.dataset.tab);
     });
-    // iOS puede interpretar el nombre como un campo de contraseña y activar
-    // el autocompletado/cambio de foco. Mantener el avance bajo control.
-    $('f-user').setAttribute('autocapitalize', 'none');
-    $('f-user').setAttribute('autocorrect', 'off');
-    $('f-user').setAttribute('autocomplete', 'username');
-    $('f-user').setAttribute('inputmode', 'text');
-    $('f-user').addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        $('f-pass').focus();
-      }
-    });
     $('login-form').onsubmit = async e => {
       e.preventDefault();
       $('login-err').textContent = '';
@@ -102,12 +90,7 @@ G.LoginUI = (() => {
     if (!G.DB.storageOk) $('login-err').textContent = 'Este navegador no deja guardar datos: juega como invitado.';
     $('btn-google').classList.toggle('hidden', G.DB.mode !== 'cloud');
     $('login-mode').textContent = modeNote();
-    setTimeout(() => {
-      // Evita que iOS restaure una selección/cursor anterior del campo.
-      const user = $('f-user');
-      user.setSelectionRange(user.value.length, user.value.length);
-      user.focus();
-    }, 50);
+    setTimeout(() => $('f-user').focus(), 50);
   }
 
   return { init, open, offerRecovery };

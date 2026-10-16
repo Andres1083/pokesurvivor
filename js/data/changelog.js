@@ -6,6 +6,19 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Mando, pausa y récords', 'Controller, pause and records'], new: [
+    ['Pausa: ahora enseña las estadísticas de tu Pokémon en ese momento (vida, ataque, velocidad, defensa, críticos, regeneración, recarga, imán, experiencia, monedas, objeto y poderes de altar).',
+     'Pause: it now shows your Pokémon’s current stats (health, attack, speed, defense, crits, regeneration, cooldown, magnet, experience, coins, item and altar powers).'],
+    ['Menú: a la derecha de tus estadísticas se ve el Pokémon con el que lograste el mejor tiempo (se apunta a partir de ahora o cuando superes tu marca; hasta entonces sale tu compañero).',
+     'Menu: next to your stats you can see the Pokémon you set your best time with (recorded from now on, or when you beat your mark; until then your partner is shown).'],
+    ['Mando: LB/RB (o los gatillos) cambian de pestaña (regiones de la colección, Ajustes, Misiones...). En Ajustes > Controles puedes intercambiar A y B.',
+     'Controller: LB/RB (or the triggers) switch tabs (collection regions, Settings, Missions...). In Settings > Controls you can swap A and B.']
+  ], fix: [
+    ['Escribir tu nombre en el inicio de sesión ya no salta a otros botones (en iPhone y teclados, las letras W, A, S, D, Q y E movían el foco del menú en vez de escribirse).',
+     'Typing your name on the sign-in screen no longer jumps to other buttons (on iPhone and keyboards, the W, A, S, D, Q and E letters moved the menu focus instead of being typed).'],
+    ['Mando: A y B ahora actúan sobre la pantalla de arriba (antes, con la colección abierta, el foco se quedaba en los botones del menú de detrás), se pueden elegir Pokémon de la lista y al volver al menú el foco regresa al botón del que saliste.',
+     'Controller: A and B now act on the top screen (before, with the collection open, the focus stayed on the menu buttons behind it), you can pick Pokémon from the list, and when you go back to the menu the focus returns to the button you came from.']
+  ] },
   { d: '2026-10-15', title: ['Estadísticas completas en la ficha', 'Full stats on the Pokémon card'], chg: [
     ['En la colección, la ficha del Pokémon ahora suma tus mejoras y vitaminas a la vida, el ataque y la velocidad, y muestra también defensa, críticos, regeneración, recarga, imán, experiencia, Pokémonedas, cambios de carta, veto y movimientos iniciales.',
      'In the collection, the Pokémon card now adds your upgrades and vitamins to health, attack and speed, and also shows defense, crits, regeneration, cooldown, magnet, experience, coins, card rerolls, ban and starting moves.']

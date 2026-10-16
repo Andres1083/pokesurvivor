@@ -91,7 +91,7 @@ G.DB = (() => {
       ach: {},                // id -> fecha: logros conseguidos
       missions: {},           // misiones del día / semana (systems/progress.js)
       profile: { favs: [], title: '' },   // perfil público: 3 favoritos y título
-      stats: { runs: 0, bestTime: 0, bestLevel: 0, totalKills: 0, pulls: 0, coinsEarned: 0, shinies: 0,
+      stats: { runs: 0, bestTime: 0, bestLevel: 0, bestTimeDex: 0, bestTimeShiny: 0, bestLevelDex: 0, bestLevelShiny: 0, totalKills: 0, pulls: 0, coinsEarned: 0, shinies: 0,
                bossesTotal: 0, riftWins: 0, evolutions: 0, missionsDone: 0, groupRuns: 0, bestGroupTime: 0 }
     };
   }
@@ -289,7 +289,16 @@ G.DB = (() => {
         m.told = m.told || o.told;
       });
     }
-    for (const k in older.stats || {}) r.stats[k] = Math.max(r.stats[k] || 0, older.stats[k] || 0);
+    // Récords: se queda el Pokémon de la partida que tenga la marca más alta.
+    const os = older.stats || {};
+    const recMon = {};
+    for (const [rec, dk, sk] of [['bestTime', 'bestTimeDex', 'bestTimeShiny'], ['bestLevel', 'bestLevelDex', 'bestLevelShiny']]) {
+      const useOlder = (os[rec] || 0) > (r.stats[rec] || 0) || !r.stats[dk];
+      recMon[dk] = useOlder ? (os[dk] || r.stats[dk] || 0) : r.stats[dk];
+      recMon[sk] = useOlder ? (os[sk] || 0) : (r.stats[sk] || 0);
+    }
+    for (const k in os) r.stats[k] = Math.max(r.stats[k] || 0, os[k] || 0);
+    Object.assign(r.stats, recMon);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;
     if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }

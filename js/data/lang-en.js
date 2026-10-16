@@ -575,5 +575,8 @@ G.I18n.add({
   // ---------------- reportar marcas del ranking ----------------
   'Reportar marca sospechosa': 'Report suspicious record', 'Ya la has reportado': 'You already reported it',
   'Ya has reportado esta marca': 'You already reported this record',
-  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it'
+  '¿Reportar la marca de {x} como trampa?': "Report {x}'s record as cheating?", 'Gracias: la revisaremos': 'Thanks: we will review it',
+
+  // ---------------- colección y pausa (estadísticas) ----------------
+  'Experiencia': 'Experience', 'Defensa': 'Defense', 'Críticos': 'Crits', 'Regeneración': 'Regeneration', 'Recarga': 'Cooldown', 'Tu Pokémon ahora': 'Your Pokémon now', 'Objeto y poderes': 'Item and powers', 'Objeto': 'Item', 'Ninguno': 'None', 'Poderes de altar': 'Altar powers', 'Bonus exp.': 'XP bonus', 'Bonus monedas': 'Coin bonus', 'Orden: Nº': 'Order: No.', 'Orden: fuerza ↓': 'Order: strength ↓', 'Ordenar la lista': 'Sort the list', 'Cambios de carta': 'Card rerolls', 'Movs. iniciales': 'Starting moves',
 });

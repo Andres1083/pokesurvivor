@@ -93,6 +93,13 @@ G.SettingsUI = (() => {
         + choice('stick', [[0.8, 'Pequeño'], [1, 'Normal'], [1.25, 'Grande']])
         + `<div class="set-row"><div class="grow"><b>Colocar los botones</b><small>Pon los ataques, la pausa y el joystick (fijo, si quieres) donde quieras de la pantalla.</small></div>
              <button class="btn small" id="set-layout">Colocar</button></div>`
+        + section('Con mando (Steam Deck, Xbox, PlayStation...)')
+        + `<div class="keys">
+             <div>Cruceta o stick</div><span>mover el marco dorado</span>
+             <div><b>A</b> / <b>B</b></div><span>aceptar / volver</span>
+             <div><b>LB</b> / <b>RB</b> (o los gatillos)</div><span>pestaña anterior / siguiente (regiones, Ajustes, Misiones...)</span>
+           </div>`
+        + toggle('padSwap', 'Intercambiar A y B', 'Actívalo si en tu mando A vuelve atrás y B acepta (distribución de Nintendo).')
         + section('En PC')
         + `<div class="keys">
              <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o flechas</div><span>moverse</span>

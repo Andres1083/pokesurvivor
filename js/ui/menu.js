@@ -85,15 +85,20 @@ G.MenuUI = (() => {
     $('menu-dex-count').textContent = `${owned} / ${G.DEX.length}` + (shinies ? ` · ${shinies} shiny` : '');
 
     const st = s.stats;
-    $('menu-stats').innerHTML =
-      `Runs <b style="color:#fff">${st.runs}</b> · Mejor tiempo <b style="color:#fff">${G.U.mmss(st.bestTime)}</b> <canvas id="best-time-mon" class="record-mon" width="32" height="32" title="Pokémon del récord de tiempo"></canvas><br>` +
-      `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> <canvas id="best-level-mon" class="record-mon" width="32" height="32" title="Pokémon del récord de nivel"></canvas> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
-      (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '');
-    // En partidas antiguas sin Pokémon asociado, usar el compañero actual.
-    const timeDex = G.DEX_BY[st.bestTimeDex] ? st.bestTimeDex : s.partner;
-    const levelDex = G.DEX_BY[st.bestLevelDex] ? st.bestLevelDex : s.partner;
-    if (G.DEX_BY[timeDex]) G.UI.sprite($('best-time-mon'), Number(timeDex), { scale: 1 });
-    if (G.DEX_BY[levelDex]) G.UI.sprite($('best-level-mon'), Number(levelDex), { scale: 1 });
+    $('menu-stats').innerHTML = '<div class="stats-text">' +
+      `Runs <b style="color:#fff">${st.runs}</b> · Mejor tiempo <b style="color:#fff">${G.U.mmss(st.bestTime)}</b><br>` +
+      `Mejor nivel <b style="color:#fff">${st.bestLevel}</b> · Derrotados <b style="color:#fff">${st.totalKills.toLocaleString('es')}</b>` +
+      (G.DB.guest ? '<br><span style="color:#ffb0b8">Modo invitado: no se guarda</span>' : '') +
+      '</div><div class="stats-recs"></div>';
+    // A la derecha, UN solo Pokémon: el que logró el mejor tiempo (en partidas antiguas sin dato, tu compañero).
+    const recDex = G.DEX_BY[st.bestTimeDex] ? st.bestTimeDex : s.partner;
+    if (G.DEX_BY[recDex]) {
+      const wrap = document.createElement('div');
+      wrap.className = 'rec-mon';
+      wrap.title = `Mejor tiempo: ${G.DEX_BY[recDex].name}`;
+      wrap.appendChild(G.UI.spriteCanvas(Number(recDex), 92, 80, { scale: 2, shadow: true, shiny: !!st.bestTimeShiny }));
+      $('menu-stats').querySelector('.stats-recs').appendChild(wrap);
+    }
 
     socialLine();
     // Premios de misiones por recoger.
