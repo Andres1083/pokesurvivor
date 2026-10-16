@@ -208,7 +208,19 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .cell.locked:hover { transform: none; border-color: rgba(244,248,255,.18); }
 .cell canvas { display: block; margin: 0 auto; }
 .cell b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cell .no { position: absolute; top: 3px; left: 6px; font-size: 11px; color: var(--muted); }
+.cell .no { position: absolute; top: 3px; left: 6px; font-size: 14px; font-weight: 700; color: #d6e3ff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+.cell .pw { position: absolute; bottom: 4px; right: 6px; font-size: 12px; font-weight: 800; color: var(--gold); text-shadow: 1px 1px 0 rgba(0,0,0,.7); }
+/* Shiny: marco de otro color (celeste/violeta) en la lista y en la ficha. */
+.cell.has-shiny { border-color: #7fe3ff; background: linear-gradient(160deg, rgba(120,220,255,.22), rgba(190,140,255,.2)); box-shadow: 0 0 10px rgba(127,227,255,.35); }
+.cell.has-shiny:hover { border-color: #b8f0ff; }
+.cell.has-shiny.on { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(127,227,255,.7), 0 0 12px rgba(127,227,255,.5); }
+#dex-detail.shiny { border-color: #7fe3ff; background: linear-gradient(180deg, rgba(120,220,255,.14), rgba(190,140,255,.1)); box-shadow: 0 0 16px rgba(127,227,255,.35); }
+/* La ficha del compañero queda fija a la derecha mientras se desplaza la lista. */
+.dex-split { align-items: start; }
+.dex-main { min-width: 0; }
+#dex-detail { position: sticky; top: 6px; max-height: calc(100vh - 80px); overflow-y: auto; }
+.stat2.full { grid-column: 1 / -1; }
+.stat2.full b { color: var(--gold); }
 .cell .stars { font-size: 10px; letter-spacing: -1px; }
 .cell .partner { position: absolute; top: 3px; right: 5px; font-size: 12px; }
 
@@ -423,6 +435,7 @@ kbd {
   #scr-menu { flex-direction: column; overflow-y: auto; }
   .menu-right { width: 100%; background: rgba(5,10,25,.7); }
   .split { grid-template-columns: 1fr; }
+  #dex-detail { position: static; max-height: none; }
   .logo .t1 { font-size: 34px; }
 }
 
@@ -717,6 +730,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #scr-login, #scr-test, #scr-result, #scr-starters, #scr-nick, #scr-levelup, #scr-pause,
   #scr-over, #scr-item, #scr-settings, #scr-legal, #scr-profile { padding: 6px 10px; }
   .split { grid-template-columns: 1fr; }
+  #dex-detail { position: static; max-height: none; }
   .logo .t1 { font-size: 30px; }
   .box { padding: 10px 14px; border-radius: 10px; }
   .box h2 { font-size: 20px; }
@@ -835,13 +849,40 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #scr-dex .grid { max-height: none; flex: 1; min-height: 0; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 5px; }
   #scr-dex .cell canvas { width: 69px; height: 60px; }
   #scr-dex .cell b { font-size: 11px; }
-  #dex-detail { min-height: 0; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; }
-  #dex-detail .stage { width: 132px; height: 114px; margin: 2px auto 4px; }
+  #scr-dex .split { align-items: stretch; }
+  #scr-dex .dex-main > .row { flex: 0 0 auto; }
+  #scr-dex h2 { font-size: 17px; margin: 0; }
+  #dex-detail { position: static; max-height: none; min-height: 0; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 0 8px; }
+  /* Imagen a la izquierda y nombre/tipos a la derecha: así caben más estadísticas. */
+  #dex-detail > * { flex: 1 1 100%; min-width: 0; order: 3; }
+  #dex-detail > .stage { flex: 0 0 84px; width: 84px; height: 74px; margin: 0; order: 0; }
+  #dex-detail > .center { flex: 1 1 0; order: 0; align-self: center; }
+  #dex-detail > .seg { order: 1; }
+  #dex-detail > .center h3 { font-size: 15px; }
+  #scr-dex .cell .no { font-size: 13px; }
+  .stats2 { gap: 0 8px; margin: 2px 0 4px; }
+  .stat2 { font-size: 11px; padding: 1px 0; }
   #dex-detail h3 { margin: 0; }
   #dex-detail .stat { grid-template-columns: 62px 1fr 34px; gap: 4px; font-size: 12px; margin: 2px 0; }
   #dex-detail p { margin: 4px 0 !important; font-size: 12px !important; }
   #dex-detail .move-icons { margin-bottom: 4px; }
   /* El botón de elegir, pegado abajo de la ficha: se ve aunque la ficha no quepa. */
-  #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
-    box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
+  #dex-detail .dex-actions { position: sticky; bottom: -6px; margin-top: auto !important; padding: 6px 0 4px; background: linear-gradient(180deg, rgba(10,22,52,0), rgba(10,22,52,.97) 28%); }
+  #dex-detail .btn { padding: 8px 6px; font-size: 15px; }
+}
+/* ============ Steam Deck y portátiles bajos (1280×800 o menos de alto) ============
+ * Misma idea que en el móvil horizontal: imagen al lado del nombre y los botones de
+ * Elegir / Mejorar siempre a la vista, para que la ficha entera quepa sin bajar. */
+@media (min-width: 761px) and (min-height: 521px) and (max-height: 860px) {
+  #dex-detail { padding: 10px 12px; display: flex; flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 0 10px;
+    max-height: calc(100vh - 80px); }
+  #dex-detail > * { flex: 1 1 100%; min-width: 0; order: 3; }
+  #dex-detail > .stage { flex: 0 0 112px; width: 112px; height: 98px; margin: 0; order: 0; }
+  #dex-detail > .center { flex: 1 1 0; order: 0; align-self: center; }
+  #dex-detail > .seg { order: 1; margin: 6px 0 2px; }
+  #dex-detail > .center h3 { font-size: 18px; margin: 0; }
+  #dex-detail .stat { margin: 3px 0; }
+  #dex-detail p { margin: 6px 0 4px !important; }
+  #dex-detail .dex-actions { position: sticky; bottom: -10px; margin-top: 6px !important; padding: 8px 0 4px;
+    background: linear-gradient(180deg, rgba(10,22,52,0), rgba(10,22,52,.97) 26%); }
 }
