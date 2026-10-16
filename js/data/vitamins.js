@@ -35,5 +35,27 @@ G.Vitamins = (() => {
     };
   }
 
-  return { LIST, BY, cost, perks };
+  /** Mejoras + vitaminas de un Pokémon ya combinadas (multiplicadores se multiplican, planos se suman).
+   *  Lo usan la partida (game.js) y la ficha de la colección (menu.js), para que ambas coincidan. */
+  function merged(dex) {
+    const upg = G.Upgrades.perks(G.DB.upgradesOf(dex));
+    const vit = perks(G.DB.vitaminsOf(dex));
+    return {
+      hp: (upg.hp || 0) + (vit.hp || 0),
+      atkMul: (upg.atkMul || 1) * (vit.atkMul || 1),
+      spdMul: (upg.spdMul || 1) * (vit.spdMul || 1),
+      cdMul: upg.cdMul || 1,
+      dmgReduce: (upg.dmgReduce || 0) + (vit.dmgReduce || 0),
+      regen: (upg.regen || 0) + (vit.regen || 0),
+      magnetMul: upg.magnetMul || 1,
+      xpMul: upg.xpMul || 1,
+      coinMul: upg.coinMul || 1,
+      startMoves: upg.startMoves || 1,
+      crit: (upg.crit || 0) + (vit.crit || 0),
+      rerolls: upg.rerolls || 0,
+      bans: upg.bans || 0
+    };
+  }
+
+  return { LIST, BY, cost, perks, merged };
 })();
